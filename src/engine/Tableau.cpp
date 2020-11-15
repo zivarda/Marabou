@@ -30,6 +30,7 @@
 #include "TableauState.h"
 
 #include <string.h>
+#include <fstream>
 
 Tableau::Tableau()
     : _n ( 0 )
@@ -1453,6 +1454,17 @@ void Tableau::setNonBasicAssignment( unsigned variable, double value, bool updat
 
 void Tableau::dumpAssignment()
 {
+    std::ofstream f_lower("/cs/labs/guykatz/zivarda/Marabou/nnBreak/lowerBounds.txt");
+    std::ofstream f_upper("/cs/labs/guykatz/zivarda/Marabou/nnBreak/upperBounds.txt");
+    const int L0_U=5,
+    L1_L=5, L1_U=55,
+    L2_L=105, L2_U=155,
+    L3_L=205, L3_U=255,
+    L4_L=305, L4_U=355,
+    L5_L=405, L5_U=455,
+    L6_L=505, L6_U=555,
+    L7_L=606, L7_U=611;
+
     printf( "Dumping assignment\n" );
     for ( unsigned i = 0; i < _n; ++i )
     {
@@ -1471,9 +1483,36 @@ void Tableau::dumpAssignment()
 
         if ( basic && basicOutOfBounds( _variableToIndex[i] ) )
             printf( "*" );
-
+        //1. open file 2. save relevant bounds 3. close file 4. compile
         printf( "\n" );
+        if((L1_L<=i && i<L1_U) || (L2_L<=i && i<L2_U) || (L3_L<=i && i<L3_U) ||
+        (L4_L<=i && i<L4_U) || (L5_L<=i && i<L5_U) || (L6_L<=i && i<L6_U)){
+            f_lower << _lowerBounds[i] <<",";
+            f_upper << _upperBounds[i] << ",";
+            if(i%100 == 54){
+                f_lower << std::endl;
+                f_upper << std::endl;
+            }
+        }
+        else if(i < L0_U){
+            f_lower << _lowerBounds[i] <<",";
+            f_upper << _upperBounds[i] << ",";
+            if(i==L0_U-1){
+                f_lower << std::endl;
+                f_upper << std::endl;
+            }
+        }
+        else if(L7_L<= i && i < L7_U){
+            f_lower << _lowerBounds[i] <<",";
+            f_upper << _upperBounds[i] << ",";
+            if(i==L7_U-1){
+                f_lower << std::endl;
+                f_upper << std::endl;
+            }
+        }
     }
+    f_lower.close();
+    f_upper.close();
 }
 
 void Tableau::dump() const

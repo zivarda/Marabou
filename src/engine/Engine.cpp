@@ -1098,8 +1098,10 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
 
         delete[] constraintMatrix;
 
-        if ( preprocess )
+        if ( preprocess ){
             performMILPSolverBoundedTightening();
+            _tableau->dumpAssignment();
+	    }
 
         if ( _splittingStrategy == DivideStrategy::Auto )
         {
