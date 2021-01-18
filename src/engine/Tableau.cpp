@@ -1454,8 +1454,8 @@ void Tableau::setNonBasicAssignment( unsigned variable, double value, bool updat
 
 void Tableau::dumpAssignment()
 {
-    std::ofstream f_lower("/cs/labs/guykatz/zivarda/Marabou/nnBreak/lowerBounds.txt");
-    std::ofstream f_upper("/cs/labs/guykatz/zivarda/Marabou/nnBreak/upperBounds.txt");
+    std::ofstream f_lower("/cs/labs/guykatz/zivarda/Marabou/nnBreak/lowerBounds.txt", std::ofstream::out);
+    std::ofstream f_upper("/cs/labs/guykatz/zivarda/Marabou/nnBreak/upperBounds.txt", std::ofstream::out);
     const int L0_U=5,
     L1_L=5, L1_U=55,
     L2_L=105, L2_U=155,

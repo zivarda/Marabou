@@ -1100,7 +1100,7 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
 
         if ( preprocess ){
             performMILPSolverBoundedTightening();
-            _tableau->dumpAssignment();
+//            _tableau->dumpAssignment();
 	    }
 
         if ( _splittingStrategy == DivideStrategy::Auto )
