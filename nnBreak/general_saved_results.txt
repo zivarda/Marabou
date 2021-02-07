@@ -1,5 +1,32 @@
 
-LAST:
+//14hr, original
+Statistics For Network & Property
+
+Patterns:
+not_found: 1.1112640287430328e-06
+00000000001000000000100001000000010000000000001000: 2.3707506709044798e-05
+
+Depths:
+0: 0
+1: 0
+2: 0
+3: 1
+4: 43
+5: 606
+
+Stop in max depth 389 times
+
+Total Percentage: 2.481877073778783e-05
+
+Unsat in second part:
+
+Unsat in first part:
+00000000001000000000100001000000010000000000001000
+00000000001000000000000001000000010000000000001000
+Saving Marabou calls: 0
+
+--
+
 Statistics For Network & Property
 
 Patterns:

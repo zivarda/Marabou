@@ -463,6 +463,31 @@ def create_mid_property(nnet_file1, inp, new_filename):
                 prop += "0"
     return prop
 
+def create_mid_property2(nnet_file1, inp):
+    """
+    Create a mid property by the first part of the net. The property created by the layer pattern of the given input
+    at the end of the evaluation of nnet1
+    :param nnet_file1: file of the part 1 of the original nnet
+    :param inp: input (point) to the net
+    :param new_filename: name of the file with the mid property
+    :return: inequalities, binary prop
+    """
+    prop = ""
+    # nn = NNet(nnet_file1)
+    # output = nn.evaluate_network(inp)
+
+    nn2 = Marabou.read_nnet(nnet_file1)
+    output = nn2.evaluate([inp])[0]
+    inequalities = []
+    for i,j in enumerate(output):
+        if j > 0:
+            inequalities.append("x{} >= 0".format(i))
+            prop += "1"
+        else:
+            inequalities.append("x{} <= 0".format(i))
+            prop += "0"
+    return inequalities, prop
+
 def run_all_nnets_and_properties(nnets_dir, properties_dir):
     print("START TSET")
     nnets_files = os.listdir(nnets_dir)
@@ -803,21 +828,21 @@ def split_property3(pf_lines, orig_point, counterexample_point, input_pattern):
         assert x1_u > x1_l
 
     #change point in a case in which we are in a qauter of orig_point or counterexample_point
-    use_orig_point = True
-    for i in range(INPUT_SIZE):
-        if not (orig_point[i] >= min_vals[i] and orig_point[i] <= max_vals[i]):
-            use_orig_point = False
-            break
-    if use_orig_point:
-        return op, orig_point
-
-    use_counterexample_point = True
-    for i in range(INPUT_SIZE):
-        if not (counterexample_point[i] >= min_vals[i] and counterexample_point[i] <= max_vals[i]):
-            use_counterexample_point = False
-            break
-    if use_counterexample_point:
-        return op, counterexample_point
+    # use_orig_point = True
+    # for i in range(INPUT_SIZE):
+    #     if not (orig_point[i] >= min_vals[i] and orig_point[i] <= max_vals[i]):
+    #         use_orig_point = False
+    #         break
+    # if use_orig_point:
+    #     return op, orig_point
+    #
+    # use_counterexample_point = True
+    # for i in range(INPUT_SIZE):
+    #     if not (counterexample_point[i] >= min_vals[i] and counterexample_point[i] <= max_vals[i]):
+    #         use_counterexample_point = False
+    #         break
+    # if use_counterexample_point:
+    #     return op, counterexample_point
 
 
     return op, point_for_pattern
@@ -876,8 +901,8 @@ def find_mid_point_to_cut(nn_file, orig_point, counterexample_point, pattern):
 
 
 def split_property4(input_range, cut_point, space_pattern):
-    lower_bounds = [0]*5
-    upper_bounds = [0]*5
+    lower_bounds = [0]*INPUT_SIZE
+    upper_bounds = [0]*INPUT_SIZE
     for i, digit in enumerate(space_pattern):
         if digit == '0':
             lower_bounds[i] = input_range.lower_bounds[i]
@@ -926,12 +951,12 @@ def verify_first_part(f1, property_file_lines, point, unsat_ranges, all_iteratio
     unsat_counter = 0
     for i, j in enumerate(output):  # i index, j val
         state = ON if j >= 0 else OFF
-        if unsat_ranges.contains(rng, i, state):
-            #by the DB we know that it is unsat
-            # print("You save running time!")
-            saving_marabou_calls += 1
-            unsat_counter += 1
-            continue
+        # if unsat_ranges.contains(rng, i, state):
+        #     #by the DB we know that it is unsat
+        #     # print("You save running time!")
+        #     saving_marabou_calls += 1
+        #     unsat_counter += 1
+        #     continue
         if j >= 0:  # the opposite of the comment
             nnMar.setUpperBound(nnMar.outputVars[0][i], -0.0001)
         else:
@@ -1007,7 +1032,7 @@ def property_percentage(curr_prop, orig_prop):
     """
     return property_volume(curr_prop)/property_volume(orig_prop)
 
-MAX_DEPTH = 5
+MAX_DEPTH = 6
 depth_counter = [0]*MAX_DEPTH
 stop_recursion_counter = 0
 result_dict = {'not_found': 0}
@@ -1047,41 +1072,51 @@ def write_results_to_file():
 
 
 def layer_pattern_by_split_input_region(f1, f2, property_file_lines, point, depth, orig_prop_lines,
-                                        unsat_ranges, path_in_tree=None, ):
+                                        unsat_ranges, output_lines, path_in_tree=None, ):
+    #todo: change the verification of the second part to support multi range and nnet of maraboupy
     global stop_recursion_counter
     print("start", depth)
     #first, verify that the second is unsat
-    mid_prop = create_mid_property(f1, point, "mid_prop.txt")
+    # mid_prop = create_mid_property(f1, point, "mid_prop.txt")
+    input_inequalities, mid_prop = create_mid_property2(f1, point)
     if mid_prop not in result_dict:
         print(mid_prop)
-        k = 0  # k is the number of lines of the input property
-        # lines = list(f)
-        # n = len(lines)
-        for l in property_file_lines:
-            if 'y' in l:
-                break
-            k += 1
-        os.system("touch second_prop.txt")
-        os.system("cat " + "mid_prop.txt" + " > second_prop.txt")
-        # os.system("cat " + property_file + " | tail -" + str(n - k) + " >> second_prop.txt")
-        with open("second_prop.txt", "a") as f:
-            f.write("".join(property_file_lines[k:]))
-
-        os.system("touch output.txt")
-        # os.system("/cs/labs/guykatz/zivarda/Marabou/build/Marabou "+f2+" "+" second_prop.txt")
-        os.system(
-            "/cs/labs/guykatz/zivarda/Marabou/build/Marabou " + f2 + " " + " second_prop.txt | tail -1 > output.txt")
-        # # check second property
-        with open('output.txt') as f:
-            result = f.readline().strip()
-            if result != UNSAT:
-                print("second")
-                print("broken by second")
-                unsat_patterns_second.add(mid_prop)
-                # return NOT_MID
-                # return
-            else:
-                print("second is unsat")
+        # k = 0  # k is the number of lines of the input property
+        # # lines = list(f)
+        # # n = len(lines)
+        # for l in property_file_lines:
+        #     if 'y' in l:
+        #         break
+        #     k += 1
+        # os.system("touch second_prop.txt")
+        # os.system("cat " + "mid_prop.txt" + " > second_prop.txt")
+        # # os.system("cat " + property_file + " | tail -" + str(n - k) + " >> second_prop.txt")
+        # with open("second_prop.txt", "a") as f:
+        #     f.write("".join(property_file_lines[k:]))
+        #
+        # nn_second = create_marabou_nn(f2, file_to_list("second_prop.txt"))
+        nn_second = create_marabou_nn(f2, input_inequalities+output_lines)
+        vals, stat = nn_second.solve()
+        if len(vals):
+            print("broken by second")
+            unsat_patterns_second.add(mid_prop)
+        else:
+            print("second is unsat")
+        # os.system("touch output.txt")
+        # # os.system("/cs/labs/guykatz/zivarda/Marabou/build/Marabou "+f2+" "+" second_prop.txt")
+        # os.system(
+        #     "/cs/labs/guykatz/zivarda/Marabou/build/Marabou " + f2 + " " + " second_prop.txt | tail -1 > output.txt")
+        # # # check second property
+        # with open('output.txt') as f:
+        #     result = f.readline().strip()
+        #     if result != UNSAT:
+        #         print("second")
+        #         print("broken by second")
+        #         unsat_patterns_second.add(mid_prop)
+        #         # return NOT_MID
+        #         # return
+        #     else:
+        #         print("second is unsat")
     else:
         print("second is in dict")
     res = verify_first_part(f1, property_file_lines, point, unsat_ranges, False)
@@ -1110,11 +1145,14 @@ def layer_pattern_by_split_input_region(f1, f2, property_file_lines, point, dept
         # rep = bin(i)[2:].zfill(5)
         # op, point_for_pattern = split_property3(property_file_lines, point, res["point"], rep)
         # layer_pattern_by_split_input_region(f1, f2, op, point_for_pattern,depth+[i], orig_prop_lines, path_in_tree)
-        find_mid_point_to_cut(f1, point, res["point"], mid_prop)
+        point_cut = find_mid_point_to_cut(f1, point, res["point"], mid_prop)
+        input_range = property_file_to_multi_range(property_file_lines)
         for i in range(2**INPUT_SIZE):
             rep = bin(i)[2:].zfill(5)
             op, point_for_pattern = split_property3(property_file_lines, point, res["point"], rep)
-            layer_pattern_by_split_input_region(f1, f2, op, point_for_pattern,depth+[i], orig_prop_lines, unsat_ranges)
+            # op, point_for_pattern = split_property4(input_range, point_cut, rep)
+            layer_pattern_by_split_input_region(f1, f2, op, point_for_pattern,depth+[i],
+                                                orig_prop_lines, unsat_ranges, output_lines)
         print("finish", depth)
 
     else:
@@ -1216,6 +1254,12 @@ def verify_second_part(nn_file, property_file_lines, point):
     print(curr_prop)
 
 
+def output_region(lines):
+    output_lines = []
+    for l in lines:
+        if 'y' in l:
+            output_lines.append(l)
+    return output_lines
 
 #***I'm here2
 #[-0.301041984, 0, 0, 0.4090909091, 0.125]
@@ -1242,10 +1286,11 @@ print("start run split")
 f1, f2 = split_nn("/cs/labs/guykatz/zivarda/Marabou/resources/nnet/acasxu", "ACASXU_experimental_v2a_1_1.nnet", 5)
 unsat_ranges_db = MultiRangeDB()
 
+y_lines = output_region(file_to_list("divya_prop.txt"))
 # for p in path_in_tree:
 layer_pattern_by_split_input_region(f1, f2,
 file_to_list("divya_prop.txt"),[0.4, 0.3, -0.499, 0.3, 0.2], [0],
-                                    file_to_list("divya_prop.txt"), unsat_ranges_db)
+                                    file_to_list("divya_prop.txt"), unsat_ranges_db, y_lines)
 print(result_dict)
 write_results_to_file()
 
